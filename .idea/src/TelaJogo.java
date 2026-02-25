@@ -26,7 +26,7 @@ public class TelaJogo {
         Color painel = new Color(35, 35, 35);
         Color verde = new Color(0, 200, 120);
         Color vermelho = new Color(220, 70, 70);
-        Color azul = new Color(0x0000FF)
+        Color azul = new Color(0x0000FF);
 
         bauIcon = redimensionar(carregarIcone("tesou.png"), 70, 70);
         moedaIcon = redimensionar(carregarIcone("din.png"), 70, 70);
