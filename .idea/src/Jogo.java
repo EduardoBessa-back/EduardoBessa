@@ -30,9 +30,9 @@ public class Jogo {
         int sorteio = random.nextInt(100);
 
         if (sorteio < chanceJogador) {
-            return true;  // ganhou
+            return true;
         } else {
-            return false; // perdeu
+            return false;
         }
     }
 }

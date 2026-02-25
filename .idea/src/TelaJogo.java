@@ -13,50 +13,71 @@ public class TelaJogo {
 
     private JLabel[] slots = new JLabel[9];
 
+    private double saldoAtualAnimado = 0;
+    private Timer animacaoSaldo;
+
+    // 🔹 NOVO: linha vencedora
+    private int[] linhaVencedora;
+    private Timer animacaoGlow;
+
     public TelaJogo() {
 
-        // ===== IMAGENS REDIMENSIONADAS (TAMANHO CELULAR) =====
-        bauIcon = redimensionar(carregarIcone("tesou.png"), 80, 80);
-        moedaIcon = redimensionar(carregarIcone("din.png"), 80, 80);
-        diamanteIcon = redimensionar(carregarIcone("diaman.png"), 80, 80);
+        Color fundo = new Color(20, 20, 20);
+        Color painel = new Color(35, 35, 35);
+        Color verde = new Color(0, 200, 120);
+        Color vermelho = new Color(220, 70, 70);
+        Color azul = new Color(0x0000FF)
+
+        bauIcon = redimensionar(carregarIcone("tesou.png"), 70, 70);
+        moedaIcon = redimensionar(carregarIcone("din.png"), 70, 70);
+        diamanteIcon = redimensionar(carregarIcone("diaman.png"), 70, 70);
 
         ImageIcon[] simbolos = { bauIcon, moedaIcon, diamanteIcon };
 
-        // ===== JANELA =====
-        JFrame frame = new JFrame("Jogo da Sorte - Jogo da Velha");
+        JFrame frame = new JFrame("🎰 Jogo da Sorte");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
+        frame.getContentPane().setBackground(fundo);
 
-        // ===== SALDO =====
-        JLabel saldoLabel = new JLabel(
-                "Saldo: R$ " + jogo.getSaldo(),
-                SwingConstants.CENTER
-        );
-        saldoLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        JLabel saldoLabel = new JLabel("", SwingConstants.CENTER);
+        saldoLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        saldoLabel.setForeground(verde);
+        saldoLabel.setBorder(BorderFactory.createEmptyBorder(15, 0, 10, 0));
 
+        saldoAtualAnimado = jogo.getSaldo();
+        saldoLabel.setText("Saldo: R$ " + saldoAtualAnimado);
 
-        JPanel tabuleiro = new JPanel(new GridLayout(3, 3, 10, 10));
-        tabuleiro.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        JPanel tabuleiro = new JPanel(new GridLayout(3, 3, 8, 8));
+        tabuleiro.setBackground(painel);
+        tabuleiro.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         for (int i = 0; i < 9; i++) {
             slots[i] = new JLabel(bauIcon, SwingConstants.CENTER);
-            slots[i].setBorder(BorderFactory.createLineBorder(Color.BLACK));
+            slots[i].setOpaque(true);
+            slots[i].setBackground(Color.BLACK);
+            slots[i].setBorder(BorderFactory.createLineBorder(verde, 2));
             tabuleiro.add(slots[i]);
         }
 
-        // ===== RESULTADO =====
-        JLabel resultadoLabel = new JLabel("Faça sua aposta!", SwingConstants.CENTER);
+        JLabel resultadoLabel = new JLabel("Faça sua aposta 🎲", SwingConstants.CENTER);
+        resultadoLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        resultadoLabel.setForeground(Color.WHITE);
 
-        // ===== APOSTA =====
         JTextField apostaField = new JTextField(8);
+        apostaField.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
         JButton jogarBtn = new JButton("JOGAR");
+        jogarBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        jogarBtn.setBackground(verde);
+        jogarBtn.setForeground(Color.BLACK);
+        jogarBtn.setFocusPainted(false);
 
         JPanel painelAposta = new JPanel();
-        painelAposta.add(new JLabel("Valor da aposta:"));
+        painelAposta.setBackground(painel);
+        painelAposta.add(new JLabel("Aposta R$: "));
         painelAposta.add(apostaField);
         painelAposta.add(jogarBtn);
 
-        // ===== AÇÃO DO BOTÃO =====
         jogarBtn.addActionListener(e -> {
 
             String texto = apostaField.getText();
@@ -76,15 +97,17 @@ public class TelaJogo {
             jogarBtn.setEnabled(false);
             resultadoLabel.setText("🎰 Girando...");
 
+            for (JLabel slot : slots) {
+                slot.setBorder(BorderFactory.createLineBorder(verde, 2));
+            }
+
             Timer timer = new Timer(100, null);
             final int[] contador = {0};
 
             timer.addActionListener(ev -> {
 
                 for (int i = 0; i < 9; i++) {
-                    slots[i].setIcon(
-                            simbolos[(int)(Math.random() * simbolos.length)]
-                    );
+                    slots[i].setIcon(simbolos[(int)(Math.random() * simbolos.length)]);
                 }
 
                 contador[0]++;
@@ -96,13 +119,16 @@ public class TelaJogo {
 
                     if (ganhou) {
                         jogo.ganhar(valor * 5);
-                        resultadoLabel.setText("🎉 JOGO DA VELHA! VOCÊ GANHOU!");
+                        resultadoLabel.setText("🎉 VOCÊ GANHOU!");
+                        resultadoLabel.setForeground(azul);
                     } else {
                         jogo.perder(valor);
-                        resultadoLabel.setText("❌ Não foi dessa vez!");
+                        resultadoLabel.setText("❌ VOCÊ PERDEU!");
+                        resultadoLabel.setForeground(vermelho);
                     }
 
-                    saldoLabel.setText("Saldo: R$ " + jogo.getSaldo());
+                    animarSaldo(saldoLabel, jogo.getSaldo());
+
                     apostaField.setText("");
                     jogarBtn.setEnabled(true);
                 }
@@ -111,60 +137,95 @@ public class TelaJogo {
             timer.start();
         });
 
-        // ===== MONTAGEM =====
-        frame.add(saldoLabel, BorderLayout.NORTH);
-        frame.add(tabuleiro, BorderLayout.CENTER);
-
         JPanel sul = new JPanel(new GridLayout(2, 1));
+        sul.setBackground(painel);
         sul.add(resultadoLabel);
         sul.add(painelAposta);
 
+        frame.add(saldoLabel, BorderLayout.NORTH);
+        frame.add(tabuleiro, BorderLayout.CENTER);
         frame.add(sul, BorderLayout.SOUTH);
 
-        // ===== TAMANHO ESTILO CELULAR =====
-        frame.pack();
         frame.setSize(360, 640);
         frame.setResizable(false);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
-    // ===== REGRA DO JOGO DA VELHA =====
     private boolean verificarVitoria() {
 
-        int[][] combinacoes = {
+        int[][] c = {
                 {0,1,2},{3,4,5},{6,7,8},
                 {0,3,6},{1,4,7},{2,5,8},
                 {0,4,8},{2,4,6}
         };
 
-        for (int[] c : combinacoes) {
-            ImageIcon a = (ImageIcon) slots[c[0]].getIcon();
-            ImageIcon b = (ImageIcon) slots[c[1]].getIcon();
-            ImageIcon d = (ImageIcon) slots[c[2]].getIcon();
+        for (int[] x : c) {
+            ImageIcon a = (ImageIcon) slots[x[0]].getIcon();
+            ImageIcon b = (ImageIcon) slots[x[1]].getIcon();
+            ImageIcon d = (ImageIcon) slots[x[2]].getIcon();
 
             if (a == b && b == d) {
+                linhaVencedora = x;
+                animarLinhaVencedora();
                 return true;
             }
         }
         return false;
     }
 
-    // ===== CARREGAR IMAGEM =====
-    private ImageIcon carregarIcone(String nome) {
-        URL url = getClass().getResource(nome);
-        if (url == null) {
-            System.out.println("Imagem não encontrada: " + nome);
-            return new ImageIcon();
-        }
-        return new ImageIcon(url);
+
+    private void animarLinhaVencedora() {
+
+        animacaoGlow = new Timer(300, null);
+        final boolean[] ligado = {false};
+
+        animacaoGlow.addActionListener(e -> {
+            ligado[0] = !ligado[0];
+            for (int i : linhaVencedora) {
+                slots[i].setBorder(
+                        BorderFactory.createLineBorder(
+                                ligado[0] ? Color.YELLOW : new Color(0, 200, 120),
+                                ligado[0] ? 5 : 2
+                        )
+                );
+            }
+        });
+
+        animacaoGlow.start();
+        new Timer(3000, e -> animacaoGlow.stop()).start();
     }
 
-    // ===== REDIMENSIONAR IMAGEM =====
-    private ImageIcon redimensionar(ImageIcon icon, int largura, int altura) {
-        Image img = icon.getImage().getScaledInstance(
-                largura, altura, Image.SCALE_SMOOTH
-        );
+
+    private void animarSaldo(JLabel label, double novoSaldo) {
+
+        double inicio = saldoAtualAnimado;
+        double diferenca = novoSaldo - inicio;
+
+        animacaoSaldo = new Timer(30, null);
+        final int[] passo = {0};
+
+        animacaoSaldo.addActionListener(e -> {
+            passo[0]++;
+            double valor = inicio + (diferenca * passo[0] / 20);
+            label.setText("Saldo: R$ " + String.format("%.2f", valor));
+
+            if (passo[0] >= 20) {
+                saldoAtualAnimado = novoSaldo;
+                animacaoSaldo.stop();
+            }
+        });
+
+        animacaoSaldo.start();
+    }
+
+    private ImageIcon carregarIcone(String nome) {
+        URL url = getClass().getResource(nome);
+        return url == null ? new ImageIcon() : new ImageIcon(url);
+    }
+
+    private ImageIcon redimensionar(ImageIcon icon, int w, int h) {
+        Image img = icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
         return new ImageIcon(img);
     }
 }
